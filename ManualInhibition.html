@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+
+<head>  
+  <script src="jspsych-6.0.4/jspsych.js"></script>
+  <script src="jspsych-6.0.4/plugins/jspsych-fullscreen.js"></script>
+  <script src="jspsych-6.0.4/plugins/jspsych-html-button-response.js"></script>
+  <script src="jspsych-6.0.4/plugins/jspsych-survey-likert.js"></script>
+  <script src="jspsych-6.0.4/plugins/jspsych-instructions.js"></script>
+ 
+  <link rel="stylesheet" type="text/css" href="jspsych-6.0.4/css/jspsych.css">
+  <style>
+  .stimulus { font-size: 32px; };
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+</head>
+
+<script>
+    let timeline = [];
+    var scale = ["Concentrated", "Somewhat Concentrated", "Neutral", "Somewhat Distracted", "Distracted"];
+
+    let scrWidth = screen.width;
+    let scrHeight = screen.height;
+
+    // generate a random subject ID with 15 characters
+    var subject_id = jsPsych.randomization.randomID(15);
+
+    var fullscreen_trial = {
+        type: 'fullscreen',
+        message:['<p style="font-size:100%;">Please put your phone in landscape mode. </p>' +
+            '<p style="font-size:100%;"> Press the button below to switch to fullscreen and continue.</p>'],
+        fullscreen_mode: true
+    }
+    timeline.push(fullscreen_trial);
+    
+    var welcome = {
+        type: 'instructions',
+        pages:['<p>Welcome to the experiment!</p>' +
+            '<p>&nbsp;</p>'+
+            '<p>Your screen is ' + scrWidth + ' pixel wide and ' + scrHeight + ' pixel high. </p>' +
+            '<p>Please keep your phone in landscape mode during the task. </p>' +
+            '<p>Press the button below to continue.</p>'],
+        show_clickable_nav: true,
+        button_label_next: 'Continue',
+    }
+    timeline.push(welcome);
+
+    /* define instructions trial */
+    var instructions = {
+        type: 'instructions',
+        pages: ['<p>In this experiment, six cubes will appear on screen in a row. </p>' +
+            '<p>When you touch the cubes, they disappear. Touch all the cubes to collect them as fast as possible. </p>' +
+            '<p>Try to click the cubes in order, from left to right or from right to left. </p>' +
+            '<p>When all cubes are clicked, a new row will appear and you have to collect those as well.</p>' +
+            '<p>Sometimes, a flash will appear on screen. Try to ignore it.</p>'+
+            '<p>&nbsp;</p>'+
+            '<p>Press continue to begin.</p>'],
+        show_clickable_nav: true,
+        button_label_next: 'Continue',
+        post_trial_gap: 1000,
+    };
+    timeline.push(instructions);
+
+    var trial = {
+        type: 'html-button-response',
+        stimulus: ' ',
+        choices: [' ',' ',' ',' ',' ',' '],
+        button_html: '<button class="jspsych-btn">%choice%</button>',
+        data: {
+            test_part: 'core_trial',
+        }
+    };
+
+    var feedback = {
+        type: 'html-button-response',
+        stimulus: function () {
+            var trials = jsPsych.data.get().filter({test_part: 'core_trial'});
+            var rt = Math.round(trials.select('rt').mean());
+
+            return "<p style=font-size:150%;>Your response time was "+rt+" ms.</p>";
+        },
+        choices: ' ',
+        button_html: '<button class="jspsych-btn" style = "display:none">%choice%</button>',
+        trial_duration: 1000,
+        data: {
+            test_part: 'feedback',
+        }
+    };
+    
+    var test_procedure = {
+        timeline: [trial, feedback],
+        repetitions: 100,
+    };
+    timeline.push(test_procedure);
+
+
+    var control = {
+      type: 'survey-likert',
+      questions: [
+        {prompt: "Please indicate how distracted or concentrated you felt during the experiment.", name: 'control', labels: scale, required: true}
+      ],
+      choices: ['Submit answer'],
+    };
+    timeline.push(control);
+
+
+    var debrief_block = {
+        type: 'instructions',
+        pages: ['<p>Thank you for participating!</p>'],
+        show_clickable_nav: true,
+        button_label_next: 'End experiment',
+    };
+    timeline.push(debrief_block);
+    
+    var fullscreen_trial_exit = {
+        type: 'fullscreen',
+        fullscreen_mode: false
+    }
+    timeline.push(fullscreen_trial_exit);
+
+    jsPsych.data.addProperties({
+        subject: subject_id,
+    });
+
+    jatos.onLoad(function () {
+        jsPsych.init({
+            timeline: timeline,
+            fullscreen: true,
+            on_finish: function() {
+                var resultJson = jsPsych.data.get().json();
+                jatos.submitResultData(resultJson, jatos.startNextComponent);
+            }
+        });
+    });
+</script>
+
+</html>
